@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Company>Red Centre Software</Company>
+    <Description>Desktop viewer of Azure Table log files.</Description>
+    <Copyright>© 2024-2025 Red Centre Software</Copyright>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn />
+    <WarningsAsErrors />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="App.ico" />
+    <None Remove="Images\AnalyseTable16.png" />
+    <None Remove="Images\BusySpin.png" />
+    <None Remove="Images\Help16.png" />
+    <None Remove="Images\NodeFolderClosed.png" />
+    <None Remove="Images\NodeFolderOpen.png" />
+    <None Remove="Images\NodeStorageAccount.png" />
+    <None Remove="Images\NodeTable.png" />
+    <None Remove="Images\NodeUnknown.png" />
+    <None Remove="Images\Refresh16.png" />
+    <None Remove="Images\ScanSubscription16.png" />
+    <None Remove="Images\SearchTable16.png" />
+    <None Remove="Images\Settings16.png" />
+    <None Remove="Images\Warning16.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="App.ico" />
+    <Resource Include="Images\AnalyseTable16.png" />
+    <Resource Include="Images\BusySpin.png" />
+    <Resource Include="Images\Help16.png" />
+    <Resource Include="Images\NodeFolderClosed.png" />
+    <Resource Include="Images\NodeFolderOpen.png" />
+    <Resource Include="Images\NodeStorageAccount.png" />
+    <Resource Include="Images\NodeTable.png" />
+    <Resource Include="Images\NodeUnknown.png" />
+    <Resource Include="Images\Refresh16.png" />
+    <Resource Include="Images\ScanSubscription16.png" />
+    <Resource Include="Images\SearchTable16.png" />
+    <Resource Include="Images\Settings16.png" />
+    <Resource Include="Images\Warning16.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="App.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Data.Tables" Version="12.10.0" />
+    <PackageReference Include="DotNetProjects.Extended.Wpf.Toolkit" Version="5.0.124" />
+    <PackageReference Include="Orthogonal.Common.Basic" Version="3.2.4" />
+    <PackageReference Include="Orthogonal.NSettings" Version="3.0.5" />
+    <PackageReference Include="RCS.Azure.StorageAccount" Version="2.0.3" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Model\TableSet.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TableSet.xsd</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Model\TableSet.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>TableSet.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>
+
