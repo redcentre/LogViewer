@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
@@ -12,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Orthogonal.Common.Basic;
 using Orthogonal.NSettings;
 using RCS.Azure.StorageAccount.Shared;
@@ -20,7 +20,7 @@ using RCS.LogViewer.Model;
 
 namespace RCS.LogViewer;
 
-sealed partial class MainController : INotifyPropertyChanged
+sealed partial class MainController : ObservableObject
 {
 	public ISettingsProcessor SettingStore { get; }
 	readonly string CacheFilename = "LogViewer-V1";
@@ -31,10 +31,10 @@ sealed partial class MainController : INotifyPropertyChanged
 	{
 		SettingStore = new RegistrySettings();
 		ActiveSettings = new AppSettings();
-		_activeSettings!.SubscriptionId = SettingStore.Get(null, nameof(ActiveSettings.SubscriptionId));
-		_activeSettings!.TenantId = SettingStore.Get(null, nameof(ActiveSettings.TenantId));
-		_activeSettings!.ApplicationId = SettingStore.Get(null, nameof(ActiveSettings.ApplicationId));
-		_activeSettings!.ClientSecret = SettingStore.Get(null, nameof(ActiveSettings.ClientSecret));
+		ActiveSettings!.SubscriptionId = SettingStore.Get(null, nameof(ActiveSettings.SubscriptionId));
+		ActiveSettings!.TenantId = SettingStore.Get(null, nameof(ActiveSettings.TenantId));
+		ActiveSettings!.ApplicationId = SettingStore.Get(null, nameof(ActiveSettings.ApplicationId));
+		ActiveSettings!.ClientSecret = SettingStore.Get(null, nameof(ActiveSettings.ClientSecret));
 		_searchSearchRowsMaximum = SettingStore.GetInt(null, nameof(SearchRowsMaximum), 500);
 		ResetApp();
 	}
@@ -48,16 +48,16 @@ sealed partial class MainController : INotifyPropertyChanged
 
 	public void SaveSettings()
 	{
-		foreach (var prop in _activeSettings.WalkProps())
+		foreach (var prop in ActiveSettings.WalkProps())
 		{
-			SettingStore.Put(null, prop.Name, prop.GetValue(_activeSettings));
+			SettingStore.Put(null, prop.Name, prop.GetValue(ActiveSettings));
 		}
 	}
 
 	public void ResetApp()
 	{
 		ClearDisplays();
-		_obsNodes.Clear();
+		ObsNodes.Clear();
 		SearchPK = null;
 		SearchRawEventIds = null;
 		SearchDateLow = DateTime.Now;
@@ -72,7 +72,7 @@ sealed partial class MainController : INotifyPropertyChanged
 	{
 		using var busy = Busy.Show("Scanning the Azure subscription for tables\nThis may take some time.", this);
 		ClearDisplays();
-		_obsNodes.Clear();
+		ObsNodes.Clear();
 		string? cacheJson = scanParam == "Force" ? null : SimpleFileCache.Get(CacheFilename, 30);
 		if (cacheJson != null)
 		{
@@ -80,14 +80,14 @@ sealed partial class MainController : INotifyPropertyChanged
 			AppNode[] nodes = JsonSerializer.Deserialize<AppNode[]>(cacheJson, NavSerOpts)!;
 			foreach (var node in nodes)
 			{
-				_obsNodes.Add(node);
+				ObsNodes.Add(node);
 			}
 			StatusMessage = "Subscription tree loaded from cache";
 			return;
 		}
 		// A scan of the susbcription is required to build the navigation tree.
 		var subnode = new AppNode(NodeType.Subscription, 0, "Subscription", null);
-		_obsNodes.Add(subnode);
+		ObsNodes.Add(subnode);
 		await foreach (SubscriptionAccount sa in SubUtil.ListAccounts().Where(x => x.ConnectionString?.Length > 0))
 		{
 			var acc = new AccountData() { Name = sa.Name, Connect = sa.ConnectionString };
@@ -109,7 +109,7 @@ sealed partial class MainController : INotifyPropertyChanged
 			}
 		}
 		// Cache the navigation tree.
-		string json = JsonSerializer.Serialize(_obsNodes.ToArray(), NavSerOpts);
+		string json = JsonSerializer.Serialize(ObsNodes.ToArray(), NavSerOpts);
 		SimpleFileCache.Put(CacheFilename, json);
 		StatusMessage = "Subscription tree loaded from Azure";
 	}
@@ -122,28 +122,28 @@ sealed partial class MainController : INotifyPropertyChanged
 		// │  Build the table query.        │
 		// └────────────────────────────────┘
 		var qlist = new List<string>();
-		if (_searchPK != null)
+		if (SearchPK != null)
 		{
-			string cond = TableClient.CreateQueryFilter($"(PartitionKey eq {_searchPK})");
+			string cond = TableClient.CreateQueryFilter($"(PartitionKey eq {SearchPK})");
 			qlist.Add(cond);
 		}
-		if (_useSearchDateLow)
+		if (UseSearchDateLow)
 		{
-			string cond = TableClient.CreateQueryFilter($"(Timestamp ge {_searchDateLow})");
+			string cond = TableClient.CreateQueryFilter($"(Timestamp ge {SearchDateLow})");
 			qlist.Add(cond);
 		}
-		if (_useSearchDateHigh)
+		if (UseSearchDateHigh)
 		{
-			string cond = TableClient.CreateQueryFilter($"(Timestamp ge {_searchDateLow})");
+			string cond = TableClient.CreateQueryFilter($"(Timestamp ge {SearchDateLow})");
 			qlist.Add(cond);
 		}
-		if (_searchSearchRawEventIds != null)
+		if (SearchRawEventIds != null)
 		{
-			int[] ids = _searchSearchRawEventIds
+			int[] ids = [.. SearchRawEventIds
 				.Split(",; ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
 				.Select(x => int.TryParse(x, out var id) ? id : int.MinValue)
 				.Where(x => x != int.MinValue)
-				.ToArray();
+			];
 			if (ids.Length > 0)
 			{
 				var conds = ids.Select(i => TableClient.CreateQueryFilter($"(EventId eq {i})"));
@@ -312,7 +312,7 @@ sealed partial class MainController : INotifyPropertyChanged
 				Trace.WriteLine($"delete chunk {tup.Ix} PK {grp.PK} size {grp.Entities.Length} -> deleted {delCount} total {delTotal}");
 			}
 		}
-		PurgeCount = PurgeCount - delTotal;
+		PurgeCount -= delTotal;
 		SetPurgeCountMsg();
 		PurgeDoneMessage = $"Delete count = {delTotal}";
 	}
@@ -323,18 +323,18 @@ sealed partial class MainController : INotifyPropertyChanged
 
 	void SetPurgeCountMsg()
 	{
-		PurgeCountMessage = _purgeCount == 0 ? $"No rows were found to delete before {_purgeDate:D}" :
-			_purgeCount == 1 ? $"One row was found to delete before {_purgeDate:D}" :
-			$"{_purgeCount} rows were found to delete before {_purgeDate:D}";
+		PurgeCountMessage = PurgeCount == 0 ? $"No rows were found to delete before {PurgeDate:D}" :
+			PurgeCount == 1 ? $"One row was found to delete before {PurgeDate:D}" :
+			$"{PurgeCount} rows were found to delete before {PurgeDate:D}";
 	}
 
 	void AfterQuickFilterChange()
 	{
 		if (_searchQuickFilter == null)
 		{
-			if (_rowsView != null)
+			if (RowsView != null)
 			{
-				_rowsView.RowFilter = null;
+				RowsView.RowFilter = null;
 			}
 			return;
 		}
@@ -352,8 +352,8 @@ sealed partial class MainController : INotifyPropertyChanged
 		sb.Replace("'", "''");
 		string arg = sb.ToString();
 		var query1 = stringColumnNames!.Select(x => $"({x} LIKE '%{arg}%')");
-		_rowsView!.RowFilter = string.Join(" OR ", query1);
-		Trace.WriteLine($"#### RowFilter -> {_rowsView.RowFilter}");
+		RowsView!.RowFilter = string.Join(" OR ", query1);
+		Trace.WriteLine($"#### RowFilter -> {RowsView.RowFilter}");
 	}
 
 	void ClearDisplays()
@@ -413,10 +413,10 @@ sealed partial class MainController : INotifyPropertyChanged
 
 	SubscriptionUtility? _subutil;
 	SubscriptionUtility SubUtil => LazyInitializer.EnsureInitialized(ref _subutil, () => new SubscriptionUtility(
-		_activeSettings.SubscriptionId!,
-		_activeSettings.TenantId!,
-		_activeSettings.ApplicationId!,
-		_activeSettings.ClientSecret!)
+		ActiveSettings.SubscriptionId!,
+		ActiveSettings.TenantId!,
+		ActiveSettings.ApplicationId!,
+		ActiveSettings.ClientSecret!)
 	);
 
 	#endregion
