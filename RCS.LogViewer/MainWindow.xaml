@@ -19,12 +19,8 @@
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.Close" CanExecute="CloseCanExecute" Executed="CloseExecute"/>
         <CommandBinding Command="ApplicationCommands.Help" CanExecute="HelpCanExecute" Executed="HelpExecute"/>
-        <CommandBinding Command="main:MainCommands.LaunchSettings" CanExecute="LaunchSettingsCanExecute" Executed="LaunchSettingsExecute"/>
         <CommandBinding Command="main:MainCommands.ScanSubscription" CanExecute="ScanSubscriptionCanExecute" Executed="ScanSubscriptionExecute"/>
-        <CommandBinding Command="main:MainCommands.SearchTable" CanExecute="SearchTableCanExecute" Executed="SearchTableExecute"/>
         <CommandBinding Command="main:MainCommands.AnalyseTable" CanExecute="AnalyseTableCanExecute" Executed="AnalyseTableExecute"/>
-        <CommandBinding Command="main:MainCommands.PurgeCount" CanExecute="PurgeCountCanExecute" Executed="PurgeCountExecute"/>
-        <CommandBinding Command="main:MainCommands.PurgeRun" CanExecute="PurgeRunCanExecute" Executed="PurgeRunExecute"/>
     </Window.CommandBindings>
 
     <Grid>
@@ -41,7 +37,7 @@
                         <Image Source="Images/ScanSubscription16.png" Style="{StaticResource MenuIconStyle}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="_Settings" Command="main:MainCommands.LaunchSettings">
+                <MenuItem Header="_Settings" Command="{Binding LaunchSettingsCommand}">
                     <MenuItem.Icon>
                         <Image Source="Images/Settings16.png" Style="{StaticResource MenuIconStyle}"/>
                     </MenuItem.Icon>
@@ -50,7 +46,7 @@
                 <MenuItem Header="E_xit" Command="ApplicationCommands.Close"/>
             </MenuItem>
             <MenuItem Header="_Table">
-                <MenuItem Header="_Search" Command="main:MainCommands.SearchTable">
+                <MenuItem Header="_Search" Command="{Binding SearchTableCommand}">
                     <MenuItem.Icon>
                         <Image Source="Images/SearchTable16.png" Style="{StaticResource MenuIconStyle}"/>
                     </MenuItem.Icon>
@@ -138,7 +134,7 @@
                     <!-- Controls and Filter Panel -->
                     <Border Grid.Row="2" Background="GhostWhite" Padding="10" TextElement.FontSize="{Binding AppFontSize}">
                         <Border.IsEnabled>
-                            <MultiBinding Converter="{StaticResource MainMultiVerter}" ConverterParameter="EnumBool|Table">
+                            <MultiBinding Converter="{StaticResource MainMultiVerter}" ConverterParameter="EnumBoolFirst|Table">
                                 <Binding Path="SelectedNode.Type"/>
                                 <Binding Path="SelectedNode"/>
                             </MultiBinding>
@@ -168,7 +164,7 @@
                             <TextBox Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" Padding="2,2,2,3" Margin="10,2,0,0" MaxLength="32" Text="{Binding SearchRawEventIds,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" MouseDoubleClick="EventIds_DoubleClick" KeyUp="TrapSearch_KeyUp" ToolTip="Enter numeric logging Event Ids separated by space or comma."/>
                             <TextBlock Grid.Row="4" Text="Partition Key" Margin="0,6,0,0"/>
                             <TextBox Grid.Row="5" Grid.ColumnSpan="2" VerticalAlignment="Center" Padding="2,2,2,3" Margin="0,2,0,0" MaxLength="80" Text="{Binding SearchPK,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" MouseDoubleClick="PK_DoubleClick" KeyUp="TrapSearch_KeyUp" ToolTip="Enter the full partition key. Partial matches are not allowed."/>
-                            <Button Grid.Row="6" Margin="0,16,0,0" Padding="12,6" Command="main:MainCommands.SearchTable">
+                            <Button Grid.Row="6" Margin="0,16,0,0" Padding="12,6" Command="{Binding SearchTableCommand}">
                                 <Button.Content>
                                     <StackPanel Orientation="Horizontal">
                                         <Image Source="Images/SearchTable16.png" Style="{StaticResource MenuIconStyle}" Margin="0,0,6,0"/>
@@ -199,7 +195,7 @@
                     <!-- Properties -->
                     <kit:PropertyGrid SelectedObject="{Binding PropsSource}" IsReadOnly="True" ShowSearchBox="False" ShowSortOptions="False" ShowTitle="False" ShowSummary="False">
                         <kit:PropertyGrid.Visibility>
-                            <MultiBinding Converter="{StaticResource MainMultiVerter}" ConverterParameter="EnumVisible|StorageAccount">
+                            <MultiBinding Converter="{StaticResource MainMultiVerter}" ConverterParameter="EnumVisibleFirst|StorageAccount">
                                 <Binding Path="SelectedNode.Type"/>
                                 <Binding Path="SelectedNode"/>
                             </MultiBinding>
@@ -208,7 +204,7 @@
                     <!-- Log Grid -->
                     <DataGrid ItemsSource="{Binding RowsView}" IsReadOnly="True" HeadersVisibility="Column" SelectionMode="Extended" SelectionUnit="Cell" AutoGeneratingColumn="LogGrid_AutoGeneratingColumn" FontSize="{Binding AppFontSize}">
                         <DataGrid.Visibility>
-                            <MultiBinding Converter="{StaticResource MainMultiVerter}" ConverterParameter="EnumVisible|Table">
+                            <MultiBinding Converter="{StaticResource MainMultiVerter}" ConverterParameter="EnumVisibleFirst|Table">
                                 <Binding Path="SelectedNode.Type"/>
                                 <Binding Path="SelectedNode"/>
                             </MultiBinding>

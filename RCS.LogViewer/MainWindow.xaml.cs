@@ -52,6 +52,7 @@ partial class MainWindow : Window, WF.IWin32Window
 
 	void MainWindow_Loaded(object sender, RoutedEventArgs e)
 	{
+		Controller.LaunchSettingsCallback = () => LaunchSettingsHandler();
 		Controller.PropertyChanged += Controller_PropertyChanged;
 		mainTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
 		mainTimer.Tick += (s, e2) =>
@@ -67,7 +68,7 @@ partial class MainWindow : Window, WF.IWin32Window
 		else
 		{
 			// Prompt the user to enter valud credentials.
-			MainCommands.LaunchSettings.Execute(null, this);
+			Controller.LaunchSettingsCommand.Execute(null);
 		}
 	}
 
@@ -114,6 +115,17 @@ partial class MainWindow : Window, WF.IWin32Window
 
 	#endregion
 
+	bool LaunchSettingsHandler()
+	{
+		var window = new AppSettingsWindow()
+		{
+			Owner = this,
+			DataContext = DataContext,
+		};
+		return window.ShowDialog() == true;
+
+	}
+
 	#region Control Event Handlers
 
 	void NavigationTree_SelItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -140,7 +152,7 @@ partial class MainWindow : Window, WF.IWin32Window
 	{
 		if (e.Key == Key.Enter)
 		{
-			MainCommands.SearchTable.Execute(null, this);
+			Controller.SearchTableCommand.Execute(null);
 		}
 	}
 

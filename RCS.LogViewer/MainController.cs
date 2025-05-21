@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Data.Tables;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Orthogonal.Common.Basic;
 using Orthogonal.NSettings;
 using RCS.Azure.StorageAccount.Shared;
@@ -35,8 +36,29 @@ sealed partial class MainController : ObservableObject
 		ActiveSettings!.TenantId = SettingStore.Get(null, nameof(ActiveSettings.TenantId));
 		ActiveSettings!.ApplicationId = SettingStore.Get(null, nameof(ActiveSettings.ApplicationId));
 		ActiveSettings!.ClientSecret = SettingStore.Get(null, nameof(ActiveSettings.ClientSecret));
-		_searchSearchRowsMaximum = SettingStore.GetInt(null, nameof(SearchRowsMaximum), 500);
+		SearchRowsMaximum = SettingStore.GetInt(null, nameof(SearchRowsMaximum), 500);
 		ResetApp();
+	}
+
+	public Func<bool>? LaunchSettingsCallback { get; set; }
+
+	[RelayCommand]
+	void LaunchSettings()
+	{
+		ActiveSettings.BeginEdit();
+		if (LaunchSettingsCallback!())
+		{
+			ActiveSettings.CheckedEndEdit(out bool credentialsChanged);
+			SaveSettings();
+			if (credentialsChanged)
+			{
+				ResetApp();
+			}
+		}
+		else
+		{
+			ActiveSettings.CancelEdit();
+		}
 	}
 
 	#region Public API
@@ -114,9 +136,12 @@ sealed partial class MainController : ObservableObject
 		StatusMessage = "Subscription tree loaded from Azure";
 	}
 
-	public async Task SearchTable()
+	bool CanSearchTable => BusyMessage == null && SelectedNode?.Type == NodeType.Table;
+
+	[RelayCommand(CanExecute = nameof(CanSearchTable))]
+	async Task SearchTable()
 	{
-		using var busy = Busy.Show($"Searching table {_selectedNode!.TableName}\nThis may take some time.", this);
+		using var busy = Busy.Show($"Searching table {SelectedNode!.TableName}\nThis may take some time.", this);
 		TableClient tclient = MakeTableRef();
 		// ┌────────────────────────────────┐
 		// │  Build the table query.        │
@@ -172,7 +197,7 @@ sealed partial class MainController : ObservableObject
 			{
 				foreach (TableEntity te in page.Values)
 				{
-					if (++rowCounter > _searchSearchRowsMaximum) break;
+					if (++rowCounter > SearchRowsMaximum) break;
 					var dsrow = ds.Table1.NewTable1Row();
 					dsrow.PartitionKey = te.PartitionKey;
 					dsrow.RowKey = te.RowKey;
@@ -218,8 +243,8 @@ sealed partial class MainController : ObservableObject
 	public async Task AnalyseTable()
 	{
 		const int PKMax = 10000;
-		string saname = _selectedNode!.Parent!.Account!.Name!;
-		string tabname = _selectedNode!.TableName!;
+		string saname = SelectedNode!.Parent!.Account!.Name!;
+		string tabname = SelectedNode!.TableName!;
 		PurgeCountMessage = "Count unknown";
 		PurgeDoneMessage = "No data";
 		PurgeDate = DateTime.Now.AddMonths(-6);
@@ -284,20 +309,26 @@ sealed partial class MainController : ObservableObject
 		AnalItems = [.. list];
 	}
 
-	public async Task PurgeRowCount()
+	bool CanPurgeRowCount => BusyMessage == null && AnalItems?.Count > 0;
+
+	[RelayCommand(CanExecute = nameof(CanPurgeRowCount))]
+	async Task PurgeRowCount()
 	{
 		using var busy = Busy.Show("Counting old rows to delete", this, 1);
 		var tclient = MakeTableRef();
-		string where = TableClient.CreateQueryFilter($"(Timestamp lt {_purgeDate})");
+		string where = TableClient.CreateQueryFilter($"(Timestamp lt {PurgeDate})");
 		PurgeCount = await WalkEntities(tclient, where).CountAsync();
 		SetPurgeCountMsg();
 	}
 
-	public async Task PurgeRowRun()
+	bool CanPurgeRowRun => BusyMessage == null && PurgeCount > 0;
+
+	[RelayCommand(CanExecute = nameof(CanPurgeRowRun))]
+	async Task PurgeRowRun()
 	{
 		using var busy = Busy.Show("Deleting old rows", this, 2);
 		var tclient = MakeTableRef();
-		string where = TableClient.CreateQueryFilter($"(Timestamp lt {_purgeDate})");
+		string where = TableClient.CreateQueryFilter($"(Timestamp lt {PurgeDate})");
 		int delTotal = 0;
 		await foreach (var tup in WalkEntities(tclient, where).ChunkAsync(100).Select((x, i) => new { Chunk = x, Ix = i }))
 		{
@@ -330,7 +361,7 @@ sealed partial class MainController : ObservableObject
 
 	void AfterQuickFilterChange()
 	{
-		if (_searchQuickFilter == null)
+		if (SearchQuickFilter == null)
 		{
 			if (RowsView != null)
 			{
@@ -344,7 +375,7 @@ sealed partial class MainController : ObservableObject
 		// (PartitionKey LIKE '%web%') OR (RowKey LIKE '%web%') OR (Message LIKE '%web%') OR ... OR (ErrorMessage LIKE '%web%')
 		char[] BadChars = ['_', '*', '%', '[', ']'];
 		var sb = new StringBuilder();
-		foreach (var c in _searchQuickFilter)
+		foreach (var c in SearchQuickFilter)
 		{
 			if (BadChars.Contains(c)) sb.Append($"[{c}]");
 			else sb.Append(c);
@@ -370,24 +401,24 @@ sealed partial class MainController : ObservableObject
 	async Task AfterSelectedNodeChanged()
 	{
 		ClearDisplays();
-		if (_selectedNode?.Type == NodeType.Subscription)
+		if (SelectedNode?.Type == NodeType.Subscription)
 		{
 			// Nothing to do.
 		}
-		else if (_selectedNode?.Type == NodeType.StorageAccount)
+		else if (SelectedNode?.Type == NodeType.StorageAccount)
 		{
 			// Get the details of the subscription for properties display.
-			using var busy = Busy.Show($"Loading storage account {_selectedNode.Account!.Name}", this);
-			SelectedAccountName = _selectedNode!.Account.Name;
+			using var busy = Busy.Show($"Loading storage account {SelectedNode.Account!.Name}", this);
+			SelectedAccountName = SelectedNode!.Account.Name;
 			PropsSource = null;
-			PropsSource = await SubUtil.ListAccounts().FirstOrDefaultAsync(a => a.Name == _selectedNode.Account!.Name);
+			PropsSource = await SubUtil.ListAccounts().FirstOrDefaultAsync(a => a.Name == SelectedNode.Account!.Name);
 			return;
 		}
-		else if (_selectedNode?.Type == NodeType.Table)
+		else if (SelectedNode?.Type == NodeType.Table)
 		{
 			// The search controls will be enabled.
-			SelectedAccountName = _selectedNode!.Parent!.Account!.Name!;
-			SelectedTableName = _selectedNode!.TableName!;
+			SelectedAccountName = SelectedNode!.Parent!.Account!.Name!;
+			SelectedTableName = SelectedNode!.TableName!;
 		}
 	}
 
@@ -409,7 +440,7 @@ sealed partial class MainController : ObservableObject
 		while (contoken?.Length > 0);
 	}
 
-	TableClient MakeTableRef() => new(_selectedNode!.Parent!.Account!.Connect, _selectedNode.TableName);
+	TableClient MakeTableRef() => new(SelectedNode!.Parent!.Account!.Connect, SelectedNode.TableName);
 
 	SubscriptionUtility? _subutil;
 	SubscriptionUtility SubUtil => LazyInitializer.EnsureInitialized(ref _subutil, () => new SubscriptionUtility(

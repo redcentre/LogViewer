@@ -15,11 +15,11 @@ internal class MainConverter : IValueConverter
 		string convarg = (string)parameter;
 		if (convarg == "None")
 		{
-			return value == null;
+			return ((value is string s) && s.Length == 0) || value == null;
 		}
 		if (convarg == "Some")
 		{
-			return value != null;
+			return ((value is string s) && s.Length > 0) || value != null;
 		}
 		if (convarg == "Not")
 		{
@@ -36,17 +36,17 @@ internal class MainConverter : IValueConverter
 		if (convarg == "LogErrorStack")
 		{
 			var stack = value as string;
-			if (stack == null) return null;
+			if (string.IsNullOrEmpty(stack)) return null;
 			string[] lines = stack.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
 			return $"{lines[0]} [{lines.Length - 1} omitted]";
 		}
 		if (convarg == "SomeVisible")
 		{
-			return value != null ? Visibility.Visible : Visibility.Collapsed;
+			return ((value is string s) && s.Length > 0) || value != null ? Visibility.Visible : Visibility.Collapsed;
 		}
 		if (convarg == "NoneVisible")
 		{
-			return value == null ? Visibility.Visible : Visibility.Collapsed;
+			return ((value is string s) && s.Length == 0) || value == null ? Visibility.Visible : Visibility.Collapsed;
 		}
 		string[] tokens = convarg.Split("|".ToCharArray());
 		if (tokens[0] == "AnalTotal")
@@ -61,10 +61,6 @@ internal class MainConverter : IValueConverter
 				_ => null,
 			};
 		}
-		if (tokens[0] == "EnumBool")
-		{
-			return tokens[1] == value.ToString();
-		}
 		if (tokens[0] == "IntEqVisible")
 		{
 			return (int?)value == int.Parse(tokens[1]) ? Visibility.Visible : Visibility.Collapsed;
@@ -75,12 +71,6 @@ internal class MainConverter : IValueConverter
 	public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
 	{
 		string convarg = (string)parameter;
-		string[] tokens = convarg.Split("|".ToCharArray());
-		if (tokens[0] == "EnumBool")
-		{
-			var enumval = Enum.Parse(targetType, tokens[1]);
-			return (bool)value ? enumval : Binding.DoNothing;
-		}
 		throw new ArgumentException($"MainConverter.ConvertBack {parameter}");
 	}
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using RCS.LogViewer.Model;
@@ -12,10 +11,6 @@ internal class MainMultiConverter : IMultiValueConverter
 	public object? Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
 	{
 		string convarg = (string)parameter;
-		if (convarg == "AnyTrue")
-		{
-			return values.Any(v => (bool?)v == true);
-		}
 		if (convarg == "TreeIcon")
 		{
 			var type = values[0] as NodeType?;
@@ -26,11 +21,11 @@ internal class MainMultiConverter : IMultiValueConverter
 			else return Images.NodeUnknown;
 		}
 		string[] tokens = convarg.Split("|".ToCharArray());
-		if (tokens[0] == "EnumVisible")
+		if (tokens[0] == "EnumVisibleFirst")
 		{
 			return tokens[1] == values[0].ToString() ? Visibility.Visible : Visibility.Hidden;
 		}
-		if (tokens[0] == "EnumBool")
+		if (tokens[0] == "EnumBoolFirst")
 		{
 			return tokens[1] == values[0].ToString();
 		}

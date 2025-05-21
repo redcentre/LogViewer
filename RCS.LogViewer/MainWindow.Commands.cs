@@ -9,12 +9,8 @@ namespace RCS.LogViewer;
 
 internal static partial class MainCommands
 {
-	public static RoutedUICommand LaunchSettings = new("Launch Settings", "LaunchSettings", typeof(Window));
 	public static RoutedUICommand ScanSubscription = new("Scan Tables", "ScanSubscription", typeof(Window));
-	public static RoutedUICommand SearchTable = new("Search Table", "SearchTable", typeof(Window));
 	public static RoutedUICommand AnalyseTable = new("Analyse Table", "AnalyseTable", typeof(Window));
-	public static RoutedUICommand PurgeCount = new("Purge Count", "PurgeCount", typeof(Window));
-	public static RoutedUICommand PurgeRun = new("Purge Run", "PurgeRun", typeof(Window));
 }
 
 partial class MainWindow
@@ -25,23 +21,11 @@ partial class MainWindow
 	void HelpCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = true;
 	void HelpExecute(object sender, ExecutedRoutedEventArgs e) => TrapHelp();
 
-	void LaunchSettingsCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = Controller.BusyMessage == null;
-	void LaunchSettingsExecute(object sender, ExecutedRoutedEventArgs e) => TrapLaunchSettings();
-
 	void ScanSubscriptionCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = Controller.BusyMessage == null && Controller.ActiveSettings.HasAzureSettings;
 	async void ScanSubscriptionExecute(object sender, ExecutedRoutedEventArgs e) => await TrapScanSub((string)e.Parameter);
 
-	void SearchTableCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = Controller.BusyMessage == null && Controller.SelectedNode?.Type == Model.NodeType.Table;
-	async void SearchTableExecute(object sender, ExecutedRoutedEventArgs e) => await Controller.SearchTable();
-
 	void AnalyseTableCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = Controller.BusyMessage == null && Controller.SelectedNode?.Type == Model.NodeType.Table;
 	async void AnalyseTableExecute(object sender, ExecutedRoutedEventArgs e) => await TrapAnalysis();
-
-	void PurgeCountCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = Controller.BusyMessage == null && Controller.AnalItems?.Count > 0;
-	async void PurgeCountExecute(object sender, ExecutedRoutedEventArgs e) => await Controller.PurgeRowCount();
-
-	void PurgeRunCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = Controller.BusyMessage == null && Controller.PurgeCount > 0;
-	async void PurgeRunExecute(object sender, ExecutedRoutedEventArgs e) => await Controller.PurgeRowRun();
 
 	void TrapHelp()
 	{
@@ -52,29 +36,6 @@ partial class MainWindow
 		string? framework = asm.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkDisplayName;
 		string message = $"Assembly Version – {an.Version}\nCompany – {company}\nCopyright – {copyright}\nFramework – {framework}";
 		Pop.Information(this, Application.Current.MainWindow.Title, "About", message);
-	}
-
-	void TrapLaunchSettings()
-	{
-		Controller.ActiveSettings.BeginEdit();
-		var window = new AppSettingsWindow()
-		{
-			Owner = this,
-			DataContext = DataContext,
-		};
-		if (window.ShowDialog() == true)
-		{
-			Controller.ActiveSettings.CheckedEndEdit(out bool credentialsChanged);
-			Controller.SaveSettings();
-			if (credentialsChanged)
-			{
-				Controller.ResetApp();
-			}
-		}
-		else
-		{
-			Controller.ActiveSettings.CancelEdit();
-		}
 	}
 
 	async Task TrapScanSub(string scanParam)
