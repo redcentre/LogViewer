@@ -15,6 +15,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Orthogonal.Common.Basic;
 using Orthogonal.NSettings;
+using RCS.Azure.StorageAccount;
 using RCS.Azure.StorageAccount.Shared;
 using RCS.LogViewer.Extensions;
 using RCS.LogViewer.Model;

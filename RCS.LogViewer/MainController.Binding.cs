@@ -23,7 +23,7 @@ partial class MainController
 	[NotifyCanExecuteChangedFor(nameof(SearchTableCommand))]
 	[NotifyCanExecuteChangedFor(nameof(PurgeRowCountCommand))]
 	[NotifyCanExecuteChangedFor(nameof(PurgeRowRunCommand))]
-	string ? _busyMessage;
+	string? _busyMessage;
 
 	[ObservableProperty]
 	int? _busyType;

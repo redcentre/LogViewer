@@ -63,7 +63,7 @@
     <PackageReference Include="DotNetProjects.Extended.Wpf.Toolkit" Version="5.0.124" />
     <PackageReference Include="Orthogonal.Common.Basic" Version="3.2.4" />
     <PackageReference Include="Orthogonal.NSettings" Version="3.0.5" />
-    <PackageReference Include="RCS.Azure.StorageAccount" Version="2.0.3" />
+    <PackageReference Include="RCS.Azure.StorageAccount" Version="2.0.4" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
 
