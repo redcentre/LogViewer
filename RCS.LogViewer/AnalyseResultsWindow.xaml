@@ -30,7 +30,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Background="PowderBlue" Padding="8,4,8,5">
+        <Border Padding="8,4,8,5">
             <Grid>
                 <StackPanel Orientation="Vertical">
                     <TextBlock Text="{Binding SelectedFullTableName,FallbackValue=account:name}" Foreground="#333333" FontSize="20" VerticalAlignment="Center"/>
@@ -95,7 +95,7 @@
                 </ContextMenu>
             </DataGrid.ContextMenu>
         </DataGrid>
-        <Border Grid.Row="3" Background="PowderBlue" Padding="8,4,8,5" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
+        <Border Grid.Row="3" Padding="8,4,8,5" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}">
             <TextBlock Text="Delete old rows" FontSize="20" Foreground="#333333" VerticalAlignment="Center"/>
         </Border>
         <Border Grid.Row="4" Padding="10" Background="LavenderBlush" IsEnabled="{Binding BusyMessage,Converter={StaticResource MainVerter},ConverterParameter=None}">
